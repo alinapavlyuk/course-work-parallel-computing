@@ -7,4 +7,6 @@ add_executable(course_work main.cpp
         src/ThreadPool.cpp
         src/ThreadPool.h
         src/TaskQueue.h
-        src/TaskQueue.cpp)
+        src/TaskQueue.cpp
+        src/Server.cpp
+        src/Server.h)
