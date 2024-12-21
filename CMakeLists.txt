@@ -9,4 +9,6 @@ add_executable(course_work main.cpp
         src/TaskQueue.h
         src/TaskQueue.cpp
         src/Server.cpp
-        src/Server.h)
+        src/Server.h
+        src/Invertedndex.cpp
+        src/Invertedndex.h)
