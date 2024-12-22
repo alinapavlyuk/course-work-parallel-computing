@@ -10,7 +10,7 @@ int main() {
     InvertedIndex index;
     index.build();
 
-    Server server(&thread_pool, 8082);
+    Server server(&thread_pool, &index, 8002);
     server.start();
 
     return 0;

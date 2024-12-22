@@ -19,7 +19,7 @@ private:
 public:
     void build();
     void add_document(const std::string& content);
-    std::vector<int> search_by_keys(std::vector<std::string>);
+    std::vector<int> search_by_keys(const std::vector<std::string>& keys);
 };
 
 #endif //COURSE_WORK_INVERTEDNDEX_H

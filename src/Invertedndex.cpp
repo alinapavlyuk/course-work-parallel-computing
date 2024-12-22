@@ -66,4 +66,27 @@ void InvertedIndex::display() const {
     }
 }
 
-std::vector<int> InvertedIndex::search_by_keys(std::vector<std::string> keys) {}
+std::vector<int> InvertedIndex::search_by_keys(const std::vector<std::string>& keys) {
+    std::set<int> result;
+
+    auto it = this->index.find(keys[0]);
+    if (it != this->index.end()) {
+        result = it->second;
+    } else {
+        return {};
+    }
+
+    for (size_t i = 1; i < keys.size(); ++i) {
+        std::set<int> temp_result;
+        auto it = this->index.find(keys[i]);
+        if (it != this->index.end()) {
+            std::set_intersection(result.begin(), result.end(), it->second.begin(), it->second.end(),
+                                  std::inserter(temp_result, temp_result.begin()));
+            result = std::move(temp_result);
+        } else {
+            return {};
+        }
+    }
+
+    return {result.begin(), result.end()};
+}

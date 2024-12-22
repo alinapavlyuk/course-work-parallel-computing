@@ -24,7 +24,7 @@ int Server::start() {
             }
             printf("Conection accepted\n");
 
-            Task new_task = Task([newsockfd]{
+            Task new_task = Task([newsockfd, this]{
                 process_request(newsockfd);
             });
             this->thread_pool->add_task(new_task);
@@ -70,13 +70,13 @@ void Server::process_request(int sockfd) {
     sscanf(buffer, "%s %s %s", method, uri, version);
     printf("%s %s %s\n", method, version, uri);
 
-    std::vector<char*> params = get_request_params(uri);
+    std::vector<std::string> params = get_request_params(uri);
 
     printf("Path: %s\n", uri);
     printf("Params:");
 
-    for (char* p : params) {
-        printf(" %s", p);
+    for (const auto& param : params) {
+        printf(" %s", param.c_str());
     }
     printf("\n");
 
@@ -84,11 +84,20 @@ void Server::process_request(int sockfd) {
     const char* headers = "Server: webserver-c\r\n"
                           "Content-type: text/html\r\n\r\n";
 
-    const char* contents;
+    char* contents;
 
     if (strcmp(uri, "/search") == 0) {
+        std::vector<int> result = this->inverted_index->search_by_keys(params);
+
         printf("Returning search result\n");
-        contents = "Search result";
+        std::string contents_str = "Search result: ";
+
+        for (const auto& docID : result) {
+            contents_str += " " + std::to_string(docID);
+        }
+
+        contents = new char[contents_str.length() + 1];
+        std::strcpy(contents, contents_str.c_str());
     }
     else if (strcmp(uri, "/upload") == 0) {
         printf("Returning upload result\n");
@@ -117,15 +126,15 @@ void Server::process_request(int sockfd) {
     close(sockfd);
 }
 
-std::vector<char *> Server::get_request_params(char *uri) {
-    std::vector<char*> params;
+std::vector<std::string> Server::get_request_params(char *uri) {
+    std::vector<std::string> params;
+
     strtok(uri, "/?");
     char* param = strtok(NULL, "q=+");
 
-    while (param != NULL)
-    {
+    while (param != NULL) {
         params.push_back(param);
-        param = strtok (NULL, "+");
+        param = strtok(NULL, "+");
     }
 
     return params;
