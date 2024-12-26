@@ -11,4 +11,6 @@ add_executable(course_work main.cpp
         src/Server.cpp
         src/Server.h
         src/Invertedndex.cpp
-        src/Invertedndex.h)
+        src/Invertedndex.h
+        src/FileManager.cpp
+        src/FileManager.h)

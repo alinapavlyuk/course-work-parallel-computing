@@ -8,20 +8,20 @@
 #include <cstdio>
 #include <cstring>
 #include "ThreadPool.h"
-#include "Invertedndex.h"
+#include "FileManager.h"
 
 #define BUFFER_SIZE 2048
 
 class Server {
     ThreadPool* thread_pool;
-    InvertedIndex* inverted_index;
+    FileManager* file_manager;
     sockaddr_in host_addr;
     int port;
 
 public:
-    Server(ThreadPool* thread_pool, InvertedIndex* inverted_index, int port) {
+    Server(ThreadPool* thread_pool, FileManager* file_manager, int port) {
         this->thread_pool = thread_pool;
-        this->inverted_index = inverted_index;
+        this->file_manager = file_manager;
         this->port = port;
     }
     int start();
@@ -29,7 +29,8 @@ public:
 private:
     int create_and_bind_socket();
     void process_request(int sockfd);
-    static std::vector<std::string> get_request_params(char *uri);
+    static std::string get_request_path(const char* uri);
+    static std::pair<std::string, std::string> get_request_params(const char* uri);
 };
 
 #endif //COURSE_WORK_SERVER_H

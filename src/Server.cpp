@@ -70,54 +70,57 @@ void Server::process_request(int sockfd) {
     sscanf(buffer, "%s %s %s", method, uri, version);
     printf("%s %s %s\n", method, version, uri);
 
-    std::vector<std::string> params = get_request_params(uri);
+    std::string path = get_request_path(uri);
+    auto [param_name, param_value] = get_request_params(uri);
 
-    printf("Path: %s\n", uri);
-    printf("Params:");
-
-    for (const auto& param : params) {
-        printf(" %s", param.c_str());
-    }
+    printf("Path: %s\n", path.c_str());
+    printf("Param %s value: %s", param_name.c_str(), param_value.c_str());
     printf("\n");
 
-    const char* status_line = "HTTP/1.0 200 OK\r\n";
-    const char* headers = "Server: webserver-c\r\n"
-                          "Content-type: text/html\r\n\r\n";
+    std::string status_line = "HTTP/1.0 200 OK\r\n";
+    std::string headers = "Server: webserver-c\r\nContent-type: text/html\r\n\r\n";
+    std::string contents;
 
-    char* contents;
+    if (path == "/search") {
+        if (param_value.empty() || param_name != "q") {
+            status_line = "HTTP/1.0 400 Bad Request\r\n";
+            contents = "Error: Parameter (q) must be provided for search.";
+        } else {
+            std::vector<int> result = this->file_manager->search_documents_by_keywords(param_value);
 
-    if (strcmp(uri, "/search") == 0) {
-        std::vector<int> result = this->inverted_index->search_by_keys(params);
-
-        printf("Returning search result\n");
-        std::string contents_str = "Search result: ";
-
-        for (const auto& docID : result) {
-            contents_str += " " + std::to_string(docID);
+            printf("Returning search result\n");
+            contents = "Search result: ";
+            for (const auto& fileID : result) {
+                contents += " " + std::to_string(fileID);
+            }
         }
+    } else if (path == "/download") {
+        if (param_value.empty() || param_name != "id") {
+            status_line = "HTTP/1.0 400 Bad Request\r\n";
+            contents = "Error: Parameter (id) must be provided for download.";
+        } else {
+            std::string file_name = this->file_manager->translate_fileID_to_filename(std::stoi(param_value));
 
-        contents = new char[contents_str.length() + 1];
-        std::strcpy(contents, contents_str.c_str());
-    }
-    else if (strcmp(uri, "/upload") == 0) {
-        printf("Returning upload result\n");
-        contents = "Upload result";
-    }
-    else {
+            if (file_name.empty()) {
+                status_line = "HTTP/1.0 400 Bad Request\r\n";
+                contents = "Error: No file with such ID exists.";
+            } else {
+                std::string result = this->file_manager->get_file_contents_by_name(file_name);
+
+                printf("Returning document\n");
+                contents = "File " + param_value + " contents:\n";
+                contents += result;
+            }
+        }
+    } else {
         printf("Returning 404\n");
         status_line = "HTTP/1.0 404 NOT FOUND\r\n";
-        contents = "Error";
+        contents = "Error: Not Found";
     }
 
-    char response[BUFFER_SIZE] = "";
-    strcat(response, status_line);
-    strcat(response, headers);
-    strcat(response, contents);
-    strcat(response, "\r\n");
+    std::string response = status_line + headers + contents + "\r\n";
 
-    printf("RESPONSE\n%s\n", response);
-
-    int valwrite = write(sockfd, response, strlen(response));
+    int valwrite = write(sockfd, response.c_str(), response.size());
     if (valwrite < 0) {
         perror("Failed to write to socket");
         return;
@@ -126,16 +129,41 @@ void Server::process_request(int sockfd) {
     close(sockfd);
 }
 
-std::vector<std::string> Server::get_request_params(char *uri) {
-    std::vector<std::string> params;
+std::string Server::get_request_path(const char* uri) {
+    std::string uri_str(uri);
+    size_t question_mark_pos = uri_str.find('?');
+    if (question_mark_pos != std::string::npos) {
+        return uri_str.substr(0, question_mark_pos);
+    }
+    return uri_str;
+}
 
-    strtok(uri, "/?");
-    char* param = strtok(NULL, "q=+");
+std::pair<std::string, std::string> Server::get_request_params(const char* uri) {
+    std::string param_name;
+    std::string param_value;
 
-    while (param != NULL) {
-        params.push_back(param);
-        param = strtok(NULL, "+");
+    std::string uri_str(uri);
+
+    size_t question_mark_pos = uri_str.find('?');
+    size_t equal_sign_pos = uri_str.find('=');
+
+    param_name = uri_str.substr(question_mark_pos + 1, equal_sign_pos - question_mark_pos - 1);
+    param_value = uri_str.substr(equal_sign_pos + 1);
+
+    std::string replace_sign = "+";
+    std::string replace_by = " ";
+
+    size_t pos = param_value.find(replace_sign);
+    while (pos != std::string::npos) {
+        param_value.replace(pos, replace_sign.size(), replace_by);
+
+        pos = param_value.find(replace_sign,
+                         pos + replace_by.size());
     }
 
-    return params;
+    return {param_name, param_value};
 }
+
+
+
+

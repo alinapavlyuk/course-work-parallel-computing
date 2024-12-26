@@ -1,6 +1,6 @@
 #include "Invertedndex.h"
 
-std::vector<std::string> InvertedIndex::tokenizeAlphanumeric(const std::string& content) {
+std::vector<std::string> InvertedIndex::tokenize_alphanumeric(const std::string& content) {
     std::vector<std::string> tokens;
     std::string token;
 
@@ -25,40 +25,22 @@ std::vector<std::string> InvertedIndex::tokenizeAlphanumeric(const std::string& 
     return tokens;
 }
 
-void InvertedIndex::build() {
-    std::string path = "../data";
-
-    for (const auto & entry : fs::directory_iterator(path)) {
-        std::string file_contents, line;
-        std::ifstream file(entry.path());
-
-        while (getline (file, line)) {
-            file_contents += line;
-            file_contents.push_back(' ');
-        }
-
-        std::cout << entry.path() << std::endl;
-
-        this->add_document(file_contents);
-    }
-}
-
-void InvertedIndex::add_document(const std::string &content) {
+int InvertedIndex::add_document(const std::string &content) {
     this->lastID++;
 
-    std::vector<std::string> tokens = tokenizeAlphanumeric(content);
+    std::vector<std::string> tokens = tokenize_alphanumeric(content);
     for (const auto& token : tokens) {
         this->index[token].insert(this->lastID);
     }
 
-    this->display();
+    return this->lastID;
 }
 
 void InvertedIndex::display() const {
-    for (const auto& [word, docIDs] : this->index) {
+    for (const auto& [word, fileIDs] : this->index) {
         std::cout << word  << ": ";
 
-        for (auto it=docIDs.begin(); it != docIDs.end(); ++it) {
+        for (auto it=fileIDs.begin(); it != fileIDs.end(); ++it) {
             std::cout << *it << " ";
         }
 
@@ -66,19 +48,20 @@ void InvertedIndex::display() const {
     }
 }
 
-std::vector<int> InvertedIndex::search_by_keys(const std::vector<std::string>& keys) {
+std::vector<int> InvertedIndex::search_by_keys(const std::string& keys) {
     std::set<int> result;
 
-    auto it = this->index.find(keys[0]);
+    std::vector<std::string> tokenized_keys = tokenize_alphanumeric(keys);
+    auto it = this->index.find(tokenized_keys[0]);
     if (it != this->index.end()) {
-        result = it->second;
+        result.insert(it->second.begin(), it->second.end());
     } else {
         return {};
     }
 
     for (size_t i = 1; i < keys.size(); ++i) {
         std::set<int> temp_result;
-        auto it = this->index.find(keys[i]);
+        auto it = this->index.find(tokenized_keys[i]);
         if (it != this->index.end()) {
             std::set_intersection(result.begin(), result.end(), it->second.begin(), it->second.end(),
                                   std::inserter(temp_result, temp_result.begin()));
