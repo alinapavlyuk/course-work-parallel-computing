@@ -105,7 +105,7 @@ void Server::process_request(int sockfd) {
                 status_line = "HTTP/1.0 400 Bad Request\r\n";
                 contents = "Error: No file with such ID exists.";
             } else {
-                std::string result = this->file_manager->get_file_contents_by_name(file_name);
+                std::string result = FileManager::get_file_contents_by_name(file_name);
 
                 printf("Returning document\n");
                 contents = "File " + param_value + " contents:\n";

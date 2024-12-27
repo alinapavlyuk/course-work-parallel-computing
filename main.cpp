@@ -9,6 +9,7 @@ int main() {
 
     FileManager file_manager("../data", &thread_pool);
     file_manager.build_index();
+    file_manager.assign_file_watcher();
 
     Server server(&thread_pool, &file_manager, 8002);
     server.start();

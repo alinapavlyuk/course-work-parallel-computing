@@ -20,3 +20,6 @@ cmake-build-debug/
 
 # Ігнорувати файли CMake кешу
 CMakeCache.txt
+
+# Ігнорувати файли з даними
+data/
