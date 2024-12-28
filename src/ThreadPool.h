@@ -7,8 +7,6 @@
 #include <condition_variable>
 #include <algorithm>
 
-const size_t QUEUE_SIZE = 20;
-
 class ThreadPool {
 public:
     inline ThreadPool() = default;
@@ -42,7 +40,7 @@ private:
     mutable std::condition_variable_any unpause_waiter;
 
     std::vector<std::thread> workers;
-    TaskQueue tasks{QUEUE_SIZE};
+    TaskQueue tasks;
 
     bool initialized = false;
     bool paused = false;

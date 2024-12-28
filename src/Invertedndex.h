@@ -4,15 +4,22 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <atomic>
 #include <set>
+#include <shared_mutex>
 
 namespace fs = std::filesystem;
 
+using read_write_lock = std::shared_mutex;
+using read_lock = std::shared_lock<read_write_lock>;
+using write_lock = std::unique_lock<read_write_lock>;
+
 class InvertedIndex {
 private:
-    std::unordered_map<std::string, std::set<unsigned int>> index;
-    unsigned int lastID = 0;
+    std::unordered_map<std::string, std::set<int>> index;
+    std::atomic<int> lastID = 0;
 
+    mutable read_write_lock index_rw_lock;
     static std::vector<std::string> tokenize_alphanumeric(const std::string& content);
 
 public:

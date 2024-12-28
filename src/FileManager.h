@@ -11,6 +11,8 @@ private:
     ThreadPool* thread_pool;
     std::unordered_map<int, std::string> fileID_to_name_map;
 
+    mutable read_write_lock map_rw_lock;
+
     void monitor_files();
     bool file_was_processed(std::string file_name);
 

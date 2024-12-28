@@ -24,7 +24,7 @@ class TaskQueue {
     using task_queue_implementation = std::vector<Task>;
 
 public:
-    inline TaskQueue(size_t size = 0) : size(size) {};
+    inline TaskQueue() {};
     inline ~TaskQueue() { clear(); }
     inline bool empty() const;
     size_t get_size() const;
@@ -43,7 +43,6 @@ public:
 private:
     mutable read_write_lock tq_rw_lock; //task queue lock
     task_queue_implementation tasks;
-    size_t size;
 };
 
 #endif //COURSE_WORK_TASKQUEUE_H

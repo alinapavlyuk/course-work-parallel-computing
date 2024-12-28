@@ -31,10 +31,6 @@ bool TaskQueue::pop(Task& task) {
 
 bool TaskQueue::emplace(Task& task) {
     write_lock _(tq_rw_lock);
-    if(tasks.size() <= size) {
-        tasks.emplace_back(task);
-        return true;
-    } else {
-        return false;
-    }
+    tasks.emplace_back(task);
+    return true;
 }
