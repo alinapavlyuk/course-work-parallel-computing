@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Inverted index</title>
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.jade.min.css"
+    >
+</head>
+<body>
+<main class="container">
+    <h1 class="pico-center">File library</h1>
+    <h4>Search and download files by keywords</h4>
+    <form role="search" type="">
+        <input name="search" type="search" placeholder="Enter keywords" />
+        <input type="submit" value="Search" />
+    </form>
+    <hr>
+    <div id="result"></div>
+</main>
+<script>
+    const searchForm = document.querySelector("form");
+    const resultList = document.querySelector("#result");
+    
+    const fetchFileData = (fileID, searchWords) => {
+        return fetch(`http://localhost:8002/download?id=${fileID}`)
+                .then((response) => response.json())
+                .then((fileData) => {
+                    const regex = new RegExp(`\\b(${searchWords.join('|')})\\b`, 'gi');
+                    const highlightedContent = fileData['content'].replace(regex, '<span><mark>$1</mark></span>');
+                    
+                    return {
+                        fileID,
+                        fileName: fileData['fileName'],
+                        content: highlightedContent,
+                    };
+                });
+    };
+    
+    const displayNoResults = () => {
+        resultList.innerHTML = `No files with the keyword(s) found.`;
+    };
+    
+    const renderSearchResults = (files) => {
+        resultList.innerHTML = "";
+        files.sort((a, b) => a.fileID - b.fileID);
+        
+        files.forEach((file, index) => {
+            resultList.innerHTML += `
+      <article>
+        <details>
+          <summary>${index + 1}. <b>Name:</b> ${file.fileName}</summary>
+          <p>${file.content}</p>
+        </details>
+      </article>
+    `;
+        });
+    };
+    
+    const performSearch = (searchWords) => {
+        const query = searchWords.join('+');
+        return fetch(`http://localhost:8002/search?q=${query}`)
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data['fileIDs'].length === 0) {
+                        displayNoResults();
+                        return [];
+                    }
+                    
+                    const limitedFileIDs = data['fileIDs'].slice(0, 15);
+                    
+                    const fetchPromises = limitedFileIDs.map((fileID) => fetchFileData(fileID, searchWords));
+                    
+                    return Promise.all(fetchPromises);
+                })
+                .then((files) => {
+                    if (files.length > 0) {
+                        renderSearchResults(files);
+                    }
+                });
+    };
+    
+    searchForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        
+        const input = searchForm.elements['search'].value;
+        const searchWords = input.trim().split(/\s+/);
+        
+        if (searchWords[0].length === 0) {
+            resultList.innerHTML = 'Enter keywords before search.';
+            return;
+        }
+        
+        performSearch(searchWords).catch(console.error);
+    });
+</script>
+</body>
+</html>
