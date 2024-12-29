@@ -26,8 +26,7 @@ std::vector<std::string> InvertedIndex::tokenize_alphanumeric(const std::string&
 }
 
 int InvertedIndex::add_document(const std::string &content) {
-    this->lastID.fetch_add(1);
-    int currentID = this->lastID.load();
+    int currentID = this->lastID.fetch_add(1);
 
     std::vector<std::string> tokens = tokenize_alphanumeric(content);
 
