@@ -31,6 +31,7 @@ private:
     void process_request(int sockfd);
     static std::string get_request_path(const char* uri);
     static std::pair<std::string, std::string> get_request_params(const char* uri);
+    static std::string escape_json_string(const std::string& str);
 };
 
 #endif //COURSE_WORK_SERVER_H

@@ -9,15 +9,14 @@ void FileManager::build_index() {
         std::cout << "Adding " << entry.path() << std::endl;
 
         Task new_task = Task([this, entry, &files_left_to_build]{
-            std::string file_contents = this->get_file_contents_by_name(entry.path());
-            this->process_new_document(entry.path(), file_contents);
+            std::string file_content = this->get_file_content_by_name(entry.path());
+            this->process_new_document(entry.path(), file_content);
             files_left_to_build.fetch_sub(1);
         });
         this->thread_pool->add_task(new_task);
     }
 
     while (files_left_to_build.load() != 0) {}
-    this->inverted_index.display();
 }
 
 void FileManager::assign_file_watcher() {
@@ -31,9 +30,9 @@ void FileManager::monitor_files() {
     while (true) {
         for (const auto & entry : fs::directory_iterator(this->data_path)) {
             if (!file_was_processed(entry.path())) {
-                std::string file_contents = this->get_file_contents_by_name(entry.path());
+                std::string file_content = this->get_file_content_by_name(entry.path());
                 std::cout << "Adding " << entry.path() << std::endl;
-                this->process_new_document(entry.path(), file_contents);
+                this->process_new_document(entry.path(), file_content);
             }
         }
 
@@ -68,15 +67,15 @@ std::string FileManager::translate_fileID_to_filename(int fileID) {
     return result;
 }
 
-std::string FileManager::get_file_contents_by_name(const std::string file_name) {
-    std::string file_contents, line;
+std::string FileManager::get_file_content_by_name(const std::string file_name) {
+    std::string file_content, line;
     std::ifstream file(file_name);
 
     while (getline (file, line)) {
-        file_contents += line;
-        file_contents.push_back(' ');
+        file_content += line;
+        file_content.push_back(' ');
     }
 
-    return file_contents;
+    return file_content;
 }
 

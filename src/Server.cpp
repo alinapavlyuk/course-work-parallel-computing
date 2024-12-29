@@ -78,47 +78,57 @@ void Server::process_request(int sockfd) {
     printf("\n");
 
     std::string status_line = "HTTP/1.0 200 OK\r\n";
-    std::string headers = "Server: webserver-c\r\nContent-type: text/html\r\n\r\n";
-    std::string contents;
+    std::string headers = "Server: webserver-c\r\nContent-type: application/json\r\n\r\n";
+    std::string content;
 
     if (path == "/search") {
         if (param_value.empty() || param_name != "q") {
             status_line = "HTTP/1.0 400 Bad Request\r\n";
-            contents = "Error: Parameter (q) must be provided for search.";
+            content = R"({ "status": "error", "message": "Parameter (q) must be provided for search." })";
         } else {
             std::vector<int> result = this->file_manager->search_documents_by_keywords(param_value);
 
             printf("Returning search result\n");
-            contents = "Search result: ";
-            for (const auto& fileID : result) {
-                contents += " " + std::to_string(fileID);
+            content = R"({ "status": "success", "fileIDs": [)";
+            for (auto it = result.begin(); it != result.end(); ++it) {
+                content += std::to_string(*it);
+                if (std::next(it) != result.end()) {
+                    content += ", ";
+                }
             }
+            content += "] }";
         }
     } else if (path == "/download") {
         if (param_value.empty() || param_name != "id") {
             status_line = "HTTP/1.0 400 Bad Request\r\n";
-            contents = "Error: Parameter (id) must be provided for download.";
+            content = R"({ "status": "error", "message": "Parameter (id) must be provided for download." })";
         } else {
             std::string file_name = this->file_manager->translate_fileID_to_filename(std::stoi(param_value));
 
             if (file_name.empty()) {
                 status_line = "HTTP/1.0 400 Bad Request\r\n";
-                contents = "Error: No file with such ID exists.";
+                content = R"({ "status": "error", "message": "No file with such ID exists." })";
             } else {
-                std::string result = FileManager::get_file_contents_by_name(file_name);
+                std::string file_content = FileManager::get_file_content_by_name(file_name);
+                std::string escaped_content = escape_json_string(file_content);
 
                 printf("Returning document\n");
-                contents = "File " + param_value + " contents:\n";
-                contents += result;
+
+                status_line = "HTTP/1.0 200 OK\r\n";
+                content = R"({ "status": "success", "fileName": ")" +
+                          file_name +
+                          R"(", "content": ")" +
+                          escaped_content +
+                          R"(" })";
             }
         }
     } else {
         printf("Returning 404\n");
         status_line = "HTTP/1.0 404 NOT FOUND\r\n";
-        contents = "Error: Not Found";
+        content = R"({ "status": "error", "message": "No such uri path exists." })";
     }
 
-    std::string response = status_line + headers + contents + "\r\n";
+    std::string response = status_line + headers + content + "\r\n";
 
     int valwrite = write(sockfd, response.c_str(), response.size());
     if (valwrite < 0) {
@@ -163,6 +173,19 @@ std::pair<std::string, std::string> Server::get_request_params(const char* uri) 
 
     return {param_name, param_value};
 }
+
+std::string Server::escape_json_string(const std::string& str) {
+    std::string escaped;
+    for (char c : str) {
+        if (c == '"') {
+            escaped += "\\\"";
+        } else {
+            escaped += c;
+        }
+    }
+    return escaped;
+}
+
 
 
 
