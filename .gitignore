@@ -6,6 +6,7 @@
 
 # Ігнорувати папку збірки
 cmake-build-debug/
+cmake-build-relwithdebinfo/
 
 # Ігнорувати об’єктні файли
 *.o
