@@ -25,32 +25,26 @@ std::vector<std::string> InvertedIndex::tokenize_alphanumeric(const std::string&
     return tokens;
 }
 
-int InvertedIndex::add_document(const std::string &content) {
+int InvertedIndex::add_document(const std::string& content) {
     int currentID = this->lastID.fetch_add(1);
 
     std::vector<std::string> tokens = tokenize_alphanumeric(content);
 
-    {
-        write_lock _(index_rw_lock);
-        for (const auto& token : tokens) {
-            this->index[token].insert(currentID);
-        }
+    for (const auto& token : tokens) {
+        index.insert_to_set(token, currentID);
     }
 
     return currentID;
 }
 
 void InvertedIndex::display() const {
-    read_lock _(index_rw_lock);
-    for (const auto& [word, fileIDs] : this->index) {
-        printf("%s: ", word.c_str());
-
-        for (auto it=fileIDs.begin(); it != fileIDs.end(); ++it) {
-            printf("%d ", *it);
+    index.apply_to_all([](const std::string& key, const std::set<int>& fileIDs) {
+        printf("%s: ", key.c_str());
+        for (const auto& id : fileIDs) {
+            printf("%d ", id);
         }
-
         printf("\n");
-    }
+    });
 }
 
 std::vector<int> InvertedIndex::search_by_keys(const std::string& keys) {
@@ -64,30 +58,26 @@ std::vector<int> InvertedIndex::search_by_keys(const std::string& keys) {
         return {};
     }
 
-    {
-        read_lock _(index_rw_lock);
+    std::set<int> temp_result;
+    bool first_key = true;
 
-        auto it = this->index.find(tokenized_keys[0]);
-        if (it != this->index.end()) {
-            result.insert(it->second.begin(), it->second.end());
+    for (const auto& key : tokenized_keys) {
+        std::set<int> current_set;
+        if (index.find(key, current_set)) {
+            if (first_key) {
+                result = std::move(current_set);
+                first_key = false;
+            } else {
+                temp_result.clear();
+                std::set_intersection(result.begin(), result.end(),
+                                      current_set.begin(), current_set.end(),
+                                      std::inserter(temp_result, temp_result.begin()));
+                result = std::move(temp_result);
+            }
         } else {
             return {};
         }
-
-        for (size_t i = 1; i < tokenized_keys.size(); ++i) {
-            std::set<int> temp_result;
-            auto it = this->index.find(tokenized_keys[i]);
-            if (it != this->index.end()) {
-                std::set_intersection(result.begin(), result.end(), it->second.begin(), it->second.end(),
-                                      std::inserter(temp_result, temp_result.begin()));
-                result = std::move(temp_result);
-            } else {
-                return {};
-            }
-        }
     }
 
-    std::vector<int> common_result{result.begin(), result.end()};
-
-    return common_result;
+    return {result.begin(), result.end()};
 }

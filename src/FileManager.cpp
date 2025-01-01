@@ -6,7 +6,7 @@ void FileManager::build_index() {
     for (const auto & entry : fs::directory_iterator(this->data_path)) {
         files_left_to_build.fetch_add(1);
 
-        printf("Adding %s\n", entry.path().c_str());
+//        printf("Adding %s\n", entry.path().c_str());
 
         Task new_task = Task([this, entry, &files_left_to_build]{
             std::string file_content = FileManager::get_file_content_by_name(entry.path());

@@ -18,10 +18,9 @@ private:
     bool file_was_processed(const std::string& file_name);
 
 public:
-    FileManager(std::string data_path, ThreadPool* thread_pool) {
-        this->data_path = data_path;
-        this->thread_pool = thread_pool;
-    }
+    FileManager(std::string data_path, ThreadPool* thread_pool, size_t segments_num):
+                data_path{data_path}, thread_pool{thread_pool},
+                inverted_index{segments_num} {};
 
     void build_index();
     void assign_file_watcher();

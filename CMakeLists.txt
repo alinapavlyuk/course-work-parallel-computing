@@ -13,4 +13,6 @@ add_executable(course_work main.cpp
         src/Invertedndex.cpp
         src/Invertedndex.h
         src/FileManager.cpp
-        src/FileManager.h)
+        src/FileManager.h
+        src/SegmentedHashMap.cpp
+        src/SegmentedHashMap.h)
